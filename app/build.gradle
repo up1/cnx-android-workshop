@@ -1,0 +1,95 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.getkeepsafe.dexcount'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
+    defaultConfig {
+        applicationId "com.workshop.calculator"
+        minSdkVersion 15
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+
+        debug {
+            testCoverageEnabled = true
+        }
+
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:25.1.0'
+    compile 'com.android.support.constraint:constraint-layout:1.0.0-beta4'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.8.6'
+    compile 'com.google.code.gson:gson:2.8.0'
+    testCompile 'junit:junit:4.12'
+
+    //Network
+    compile 'com.squareup.retrofit2:retrofit:2.0.2'
+    compile 'com.squareup.retrofit2:converter-gson:2.0.2'
+    compile 'com.squareup.okhttp3:okhttp:3.2.0'
+
+    //Mocking
+    androidTestCompile "com.squareup.okhttp3:mockwebserver:3.2.0"
+
+
+}
+
+apply plugin: 'jacoco'
+
+task jacocoTestReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
+
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+
+    jacocoClasspath = configurations['androidJacocoAnt']
+//  https://github.com/JakeWharton/butterknife/issues/289
+    def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*','**/*$ViewBinder*.*']
+    def debugTree = fileTree(dir: "${buildDir}/intermediates/classes/debug", excludes: fileFilter)
+    def mainSrc = "${project.projectDir}/src/main/java"
+
+    sourceDirectories = files([mainSrc])
+    classDirectories = files([debugTree])
+    executionData = files(["${buildDir}/jacoco/testDebugUnitTest.exec",
+                           "${buildDir}/outputs/code-coverage/connected/Nexus_5_API_25(AVD) - 7.1-coverage.ec"
+    ])
+
+    // Work-around to allow us to build list of executionData files in doFirst
+    onlyIf = {
+        true
+    }
+
+    /*
+     * Builds list of source dirs, class dirs, and executionData files
+     * when task is run, not at script evaluation time
+     */
+    doFirst {
+        subprojects.findAll { subproject ->
+            subproject.pluginManager.hasPlugin('java')
+        }.each { subproject ->
+            additionalSourceDirs files((Set<File>) subproject.sourceSets.main.allJava.srcDirs)
+            additionalClassDirs((FileCollection) subproject.sourceSets.main.output)
+            if (subproject.pluginManager.hasPlugin('jacoco')) {
+                executionData subproject.tasks.jacocoTestReport.executionData
+            }
+        }
+
+        executionData = files(executionData.findAll {
+            it.exists()
+        })
+    }
+}
