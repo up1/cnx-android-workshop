@@ -22,6 +22,10 @@ interface CalculatorListener {
     void onSuccess(String result);
 }
 
+interface MyListener {
+    void onAPISuccess(CalculatorAPI.UserInformation userInformation);
+}
+
 class JsonInterceptor implements Interceptor {
     @Override
     public okhttp3.Response intercept(Chain chain) throws IOException {
@@ -41,11 +45,16 @@ public class CalculatorInteractor {
     public static String CALCULATOR_ENDPOINT = "http://10.0.2.2:8882/";
     private Retrofit retrofit;
     private CalculatorListener calculatorListener;
+    private MyListener myListener;
 
     public CalculatorInteractor(CalculatorListener calculatorListener) {
         this.calculatorListener = calculatorListener;
     }
 
+    public CalculatorInteractor(CalculatorListener calculatorListener, MyListener myListener) {
+        this.calculatorListener = calculatorListener;
+        this.myListener = myListener;
+    }
 
     public void plus(int firstNumber, int secondNumber) {
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
@@ -62,12 +71,14 @@ public class CalculatorInteractor {
 
         CalculatorAPI.MyRequest myRequest = new CalculatorAPI.MyRequest("somkiat", "xxxx");
         final Call<CalculatorAPI.UserInformation> call =
-                calculatorAPI.getByUser(21, myRequest);
+                calculatorAPI.getByUser(2, myRequest);
 
         call.enqueue(new Callback<CalculatorAPI.UserInformation>() {
             @Override
             public void onResponse(Call<CalculatorAPI.UserInformation> call, Response<CalculatorAPI.UserInformation> response) {
-                Log.d("test", "onResponse: " + response.body());
+//                Log.d("test", "onResponse: " + response.body());
+//                calculatorListener.onSuccess(response.body().toString());
+                myListener.onAPISuccess(response.body());
             }
 
             @Override

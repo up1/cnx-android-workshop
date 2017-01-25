@@ -3,7 +3,9 @@ package com.workshop.calculator;
 
 import android.support.annotation.NonNull;
 
-class MainController implements CalculatorListener {
+import com.workshop.calculator.network.CalculatorAPI;
+
+class MainController implements CalculatorListener, MyListener {
 
     private MainView mainView;
     private CalculatorInteractor calculatorInteractor;
@@ -19,7 +21,7 @@ class MainController implements CalculatorListener {
 //        int result = calculator.plus(firstNumber, secondNumber);
 //        mainView.sendResult(String.valueOf(result));
 
-        calculatorInteractor = new CalculatorInteractor(this);
+        calculatorInteractor = new CalculatorInteractor(this, this);
         calculatorInteractor.plus(firstNumber, secondNumber);
     }
 
@@ -52,5 +54,10 @@ class MainController implements CalculatorListener {
     void setupInput(String firstNumber, String secondNumber) {
         this.firstNumber = Integer.parseInt(firstNumber);
         this.secondNumber = Integer.parseInt(secondNumber);
+    }
+
+    @Override
+    public void onAPISuccess(CalculatorAPI.UserInformation userInformation) {
+        mainView.sendResult(userInformation.getName());
     }
 }
